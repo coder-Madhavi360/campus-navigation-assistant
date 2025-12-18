@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Campus Map</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    margin: 0;
+}
+canvas {
+    border: 1px solid #ccc;
+    background: #ffffff;
+}
+.sidebar {
+    width: 300px;
+    padding: 20px;
+    background: #f8f9fa;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="mapCanvas" width="600" height="500"></canvas>
+
+<div class="sidebar">
+<h3>Navigation Steps</h3>
+<div id="steps">Loading route...</div>
+</div>
+
+<script>
+// Read URL parameters SAFELY
+const params = new URLSearchParams(window.location.search);
+const start = params.get("start");
+const end = params.get("end");
+
+const canvas = document.getElementById("mapCanvas");
+const ctx = canvas.getContext("2d");
+
+// Campus locations
+const locations = {
+    Gate: { x: 100, y: 250 },
+    Library: { x: 250, y: 150 },
+    Admin: { x: 250, y: 350 },
+    Lab: { x: 400, y: 250 },
+    Hostel: { x: 550, y: 250 }
+};
+
+// Routes
+const routes = {
+    Gate: ["Library", "Admin"],
+    Library: ["Lab"],
+    Admin: ["Lab"],
+    Lab: ["Hostel"],
+    Hostel: []
+};
+
+// Draw map background + buildings
+function drawMap() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.font = "14px Arial";
+    ctx.fillStyle = "black";
+
+    for (let place in locations) {
+        const p = locations[place];
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText(place, p.x + 10, p.y - 10);
+    }
+}
+
+// Navigation logic
+function getPath(start, end) {
+    if (!start || !end) return [];
+
+    if (start === end) return [start];
+
+    if (routes[start]?.includes(end)) {
+        return [start, end];
+    }
+
+    for (let mid of routes[start] || []) {
+        if (routes[mid]?.includes(end)) {
+            return [start, mid, end];
+        }
+    }
+
+    return [];
+}
+
+// Draw route
+function drawRoute(path) {
+    if (path.length === 0) return;
+
+    ctx.beginPath();
+    ctx.strokeStyle = "#1a73e8";
+    ctx.lineWidth = 3;
+
+    path.forEach((node, index) => {
+        const p = locations[node];
+        if (index === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+    });
+
+    ctx.stroke();
+}
+
+// Show navigation steps
+function showSteps(path) {
+    if (path.length === 0) {
+        document.getElementById("steps").innerHTML =
+            "<p>No route found.</p>";
+        return;
+    }
+
+    let html = "<ol>";
+    for (let i = 0; i < path.length - 1; i++) {
+        html += `<li>Walk from <b>${path[i]}</b> to <b>${path[i + 1]}</b></li>`;
+    }
+    html += "</ol><b>Destination Reached ✔</b>";
+    document.getElementById("steps").innerHTML = html;
+}
+
+// Run
+drawMap();
+const path = getPath(start, end);
+drawRoute(path);
+showSteps(path);
+</script>
+
+</body>
+</html>
